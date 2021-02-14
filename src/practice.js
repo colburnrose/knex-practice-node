@@ -69,7 +69,7 @@ function getProductsWithImage() {
 
 getProductsWithImage();
 
-function findMostPopularVideo() {
+function findMostPopularVideo(days) {
   knexDB
     .select("video_name", "region")
     .count("date_viewed AS views")
@@ -88,3 +88,5 @@ function findMostPopularVideo() {
       console.log(result);
     });
 }
+
+findMostPopularVideo(30);
