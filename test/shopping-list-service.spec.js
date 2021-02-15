@@ -56,34 +56,30 @@ describe("Shopping List Service Object", () => {
   // After all tests run, let go of the db connection
   after("destroy db connection", () => db.destroy());
 
-  describe("getAllShoppingListItems", () => {
-    it("returns an empty array", () => {
+  describe("getAllShoppingItems()", () => {
+    it("returns 'shopping_list' has no data", () => {
       return ShoppingListService.getAllShoppingItems(db).then((items) =>
         expect(items).to.eql([])
       );
     });
+
     // Whenever we set a context with data present, we should always include
     // a beforeEach() hook within the context that takes care of adding the
     // appropriate data to our table
-    context(`Data 'shopping_list' has no data`, () => {
-      beforeEach("insert test articles", () =>
+    context(`with data present`, () => {
+      beforeEach("insert shopping items", () =>
         db("shopping_list").insert(testItems)
       );
 
-      it(`getAllShoppingItems() resolves all items from 'shopping_list' table`, () => {
-        return ShoppingListService.getAllShoppingItems(db).then((actual) => {
-          expect(actual).to.eql(
-            testItems.map((item) => ({
-              ...item,
-              date_added: new Date(item.date_added),
-            }))
-          );
+      it(`returns all test items`, () => {
+        return ShoppingListService.getAllShoppingItems(db).then((items) => {
+          expect(items).to.eql(testItems);
         });
       });
     });
   });
 
-  describe(`insertShoppingList()`, () => {
+  describe(`insertShoppingItem()`, () => {
     it("inserts a new shopping item and return item with new id", () => {
       // new shopping item to test
       const item = {
@@ -103,6 +99,83 @@ describe("Shopping List Service Object", () => {
           category: item.category,
           checked: item.checked,
         });
+      });
+    });
+  });
+
+  describe("getItemById()", () => {
+    it("should return undefined", () => {
+      return ShoppingListService.getItemById(db, 999).then(
+        (item) => expect(item).to.be.undefined
+      );
+    });
+
+    context("with data present", () => {
+      before("insert items", () => db("shopping_list").insert(testItems));
+
+      it("should return existing item", () => {
+        const expectedShoppingId = 3;
+        const expectedShoppingItem = testItems.find(
+          (a) => a.id === expectedShoppingId
+        );
+
+        return ShoppingListService.getItemById(db, expectedShoppingId).then(
+          (actual) => {
+            expect(actual).to.eql(expectedShoppingItem);
+          }
+        );
+      });
+    });
+  });
+
+  describe("deleteShoppingItem()", () => {
+    it("should return 0 rows affected", () => {
+      return ShoppingListService.deleteItem(db, 999).then((rowsAffected) => {
+        expect(rowsAffected).to.eq(0);
+      });
+    });
+
+    context("with data present", () => {
+      before("shopping items", () => db("shopping_list").insert(testItems));
+      it("should return 1 row affected and record is removed from db", () => {
+        const itemId = 1;
+        return ShoppingListService.deleteItem(db, itemId)
+          .then(() => ShoppingListService.getAllShoppingItems(db))
+          .then((allItems) => {
+            const expected = testItems.filter((a) => a.id !== itemId);
+            expect(allItems).to.eql(expected);
+          });
+      });
+    });
+  });
+
+  describe("updateShoppingItem()", () => {
+    it("should return 0 rows affected", () => {
+      return ShoppingListService.updateShoppingItem(db, 999, {
+        name: "new title!",
+      }).then((rowsAffected) => expect(rowsAffected).to.eq(0));
+    });
+
+    context("with data present", () => {
+      before("insert items", () => db("shopping_list").insert(testItems));
+
+      it("should successfully update an item", () => {
+        const itemId = 1;
+        const testItem = testItems.find((a) => a.id === itemId);
+        // make copy of testArticle in db, overwriting with newly updated field value
+        const updatedItem = { ...testItem, name: "New title!" };
+
+        return ShoppingListService.updateShoppingItem(db, itemId, updatedItem)
+          .then((rowsAffected) => {
+            expect(rowsAffected).to.eq(1);
+            return db("shopping_list")
+              .select("*")
+              .where({ id: itemId })
+              .first();
+          })
+          .then((article) => {
+            expect(article).to.eql(updatedItem);
+          });
       });
     });
   });
