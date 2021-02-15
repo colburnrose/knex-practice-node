@@ -1,11 +1,9 @@
-const knex = require("knex");
-
 const ArticlesService = {
-  getAllArticles(knex) {
-    return knex.select("*").from("blogful_articles");
+  getAllArticles(db) {
+    return db.select("*").from("blogful_articles");
   },
-  insertArticle(knex, newArticle) {
-    return knex
+  insertArticle(db, newArticle) {
+    return db
       .insert(newArticle)
       .into("blogful_articles")
       .returning("*")
@@ -13,14 +11,14 @@ const ArticlesService = {
         return rows[0];
       });
   },
-  getById(knex, id) {
-    return knex.from("blogful_articles").select("*").where("id", id).first();
+  getById(db, id) {
+    return db("blogful_articles").select("*").where({ id }).first();
   },
-  deleteArticle(knex, id) {
-    return knex("blogful_articles").where({ id }).delete();
+  deleteArticle(db, id) {
+    return db("blogful_articles").where({ id }).delete();
   },
-  updateArticle(knex, id, newArticleFields) {
-    return knex("blogful_articles").where({ id }).update(newArticleFields);
+  updateArticle(db, id, data) {
+    return db("blogful_articles").where({ id }).update(data);
   },
 };
 
